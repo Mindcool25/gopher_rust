@@ -3,23 +3,34 @@ use std::net::{TcpListener, TcpStream};
 use std::io::{Read, Write};
 use std::thread;
 use std::fs;
-use std::file;
+
+
+// Function to parse the gophermap to allow for outside connections.
+fn parse_map(gmap: String, connect_addr: String) -> String {
+    // Replace all instances of localhost to the correct ip address
+    gmap.replace("localhost", &connect_addr)
+}
+
 
 fn client_handler(mut stream: TcpStream) -> io::Result<()> {
     println!("Client connected with info:\n{:?}", stream);
+    //println!("Accessed from addressed:{:?}", stream.local_addr().unwrap());
     
     // Reading from user initially
     let mut buf = [0;256];
     let bytes_read = stream.read(&mut buf)?;
     let client_in = String::from_utf8_lossy(&buf).replace(&['\r', '\n', '\u{0}'][..], "");
     println!("From user: {}", bytes_read);
-    println!("To string: {}", String::from_utf8_lossy(&buf));
         
     // If the client sends nothing, send gophermap.
     if client_in.eq("") {
         // Getting info from text file
-        let gophermap: String = fs::read_to_string("./resources/gophermap")
+        let file: String = fs::read_to_string("./resources/gophermap")
             .expect("Failed to  read file.");
+        
+        // Parse the gophermap
+        let conn_ip: String = stream.local_addr().unwrap().to_string().replace(':',"\t");
+        let gophermap: String = parse_map(file, conn_ip);
 
         // Sending the client the gophermap
         stream.write_all(gophermap.as_bytes())?;
@@ -69,7 +80,7 @@ fn main() {
     println!("Starting Server...");
 
     // Creating and binding port
-    let receiver_listener = TcpListener::bind("127.0.0.1:70").expect("Failed to bind");
+    let receiver_listener = TcpListener::bind("192.168.1.154:8000").expect("Failed to bind");
 
     // Creating thread vector
     let mut thread_vec: Vec<thread::JoinHandle<()>> = Vec::new();
@@ -86,4 +97,3 @@ fn main() {
         handle.join().unwrap();
     }
 }
-
