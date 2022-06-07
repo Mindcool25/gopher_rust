@@ -80,7 +80,7 @@ fn main() {
     println!("Starting Server...");
 
     // Creating and binding port
-    let receiver_listener = TcpListener::bind("192.168.1.154:8000").expect("Failed to bind");
+    let receiver_listener = TcpListener::bind("192.168.1.154:70").expect("Failed to bind");
 
     // Creating thread vector
     let mut thread_vec: Vec<thread::JoinHandle<()>> = Vec::new();
