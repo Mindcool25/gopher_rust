@@ -54,20 +54,25 @@ fn client_handler(mut stream: TcpStream) -> io::Result<()> {
     // If the client is looking for a text file, find and send that text file.
     else {
         // Getting info from text file
-        let filename = format!("./resources/{}", client_in);
-        let gophermap = fs::read_to_string(&filename);
+        if client_in.contains("../..") {
+            let error = String::from("Directory surfing not allowed, sorry.");
+            stream.write_all(error.as_bytes())?;
+        }
+        else {
+            let filename = format!("./resources/{}", client_in);
+            let gophermap = fs::read_to_string(&filename);
 
-        // Send if file exists, tell the user it does not exist otherwise.
-        match gophermap {
-            Ok(gophermap)=> {
-                // Sending the client the gophermap
-                stream.write_all(gophermap.as_bytes())?;
-
-            },
-            Err(e)=> {
-                println!("File not found\n{:?}", e);
-                let err_message = format!("The file {} does not exist.", filename);
-                stream.write_all(err_message.as_bytes())?;
+            // Send if file exists, tell the user it does not exist otherwise.
+            match gophermap {
+                Ok(gophermap)=> {
+                    // Sending the client the gophermap
+                    stream.write_all(gophermap.as_bytes())?;
+                },
+                Err(e)=> {
+                    println!("File not found\n{:?}", e);
+                    let err_message = format!("The file {} does not exist.", filename);
+                    stream.write_all(err_message.as_bytes())?;
+                }
             }
         }
     }
