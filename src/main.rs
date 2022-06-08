@@ -29,7 +29,7 @@ fn client_handler(mut stream: TcpStream) -> io::Result<()> {
             .expect("Failed to  read file.");
         
         // Parse the gophermap
-        let conn_ip: String = stream.local_addr().unwrap().to_string().replace(':',"\t");
+        let conn_ip: String = stream.local_addr().expect("Failed to get IP").to_string().replace(':',"\t");
         let gophermap: String = parse_map(file, conn_ip);
 
         // Sending the client the gophermap
