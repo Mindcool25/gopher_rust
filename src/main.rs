@@ -8,19 +8,20 @@ use std::fs;
 // Function to parse the gophermap to allow for outside connections.
 fn parse_map(gmap: String, connect_addr: String) -> String {
     // Replace all instances of localhost to the correct ip address
+    // This could be made better, using 0 and 1 and otherwise to correctly assign stuff
     gmap.replace("localhost", &connect_addr)
 }
 
 
 fn client_handler(mut stream: TcpStream) -> io::Result<()> {
+    // Showing the client connection
     println!("Client connected with info:\n{:?}", stream);
-    //println!("Accessed from addressed:{:?}", stream.local_addr().unwrap());
     
     // Reading from user initially
     let mut buf = [0;256];
-    let bytes_read = stream.read(&mut buf)?;
+    let _bytes_read = stream.read(&mut buf)?;
     let client_in = String::from_utf8_lossy(&buf).replace(&['\r', '\n', '\u{0}'][..], "");
-    println!("From user: {}", bytes_read);
+    println!("From user: {}", &client_in);
         
     // If the client sends nothing, send gophermap.
     if client_in.eq("") {
@@ -35,7 +36,9 @@ fn client_handler(mut stream: TcpStream) -> io::Result<()> {
         // Sending the client the gophermap
         stream.write_all(gophermap.as_bytes())?;
     }
-
+    
+    // Unused code for pictures, not working yet.
+    // TODO: Fix this
     else if client_in.to_lowercase().contains(".png") {
         let filename = format!("./resources/{}",client_in);
         let image = fs::read(filename);
@@ -76,7 +79,8 @@ fn client_handler(mut stream: TcpStream) -> io::Result<()> {
             }
         }
     }
-
+    
+    // Exiting the function after packets are sent
     println!("Finished sending, closing connection.");
     Ok(())
 }
