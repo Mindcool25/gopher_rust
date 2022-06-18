@@ -30,36 +30,23 @@ fn client_handler(mut stream: TcpStream) -> io::Result<()> {
             .expect("Failed to  read file.");
         
         // Parse the gophermap
-        let conn_ip: String = stream.local_addr().expect("Failed to get IP").to_string().replace(':',"\t");
+        let conn_ip: String = stream.local_addr()
+            .expect("Failed to get IP")
+            .to_string()
+            .replace(':',"\t");
         let gophermap: String = parse_map(file, conn_ip);
 
         // Sending the client the gophermap
         stream.write_all(gophermap.as_bytes())?;
     }
-    
-    // Unused code for pictures, not working yet.
-    // TODO: Fix this
-    else if client_in.to_lowercase().contains(".png") {
-        let filename = format!("./resources/{}",client_in);
-        let image = fs::read(filename);
-        match image {
-            Ok(image)=> {
-                // Sending the client the gophermap
-                stream.write_all(&image)?;
-
-            },
-            Err(e)=> {
-                println!("File not found\n{:?}", e);
-            }
-        }
-    }
-
     // If the client is looking for a text file, find and send that text file.
     else {
         // Getting info from text file
         if client_in.contains("../..") {
-            let error = String::from("Directory surfing not allowed, sorry.");
+            let error = String::from("iDirectory surfing not allowed, sorry.");
             stream.write_all(error.as_bytes())?;
+            log(format!("Client from IP {} attempted to directory surf.", client_ip))
+                .expect("Failed to log to file.");
         }
         else {
             let filename = format!("./resources/{}", client_in);
