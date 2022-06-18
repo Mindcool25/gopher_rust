@@ -3,25 +3,33 @@ use std::net::{TcpListener, TcpStream};
 use std::io::{Read, Write};
 use std::thread;
 use std::fs;
-
+use std::fs::File;
+use chrono::Local;
 
 // Function to parse the gophermap to allow for outside connections.
 fn parse_map(gmap: String, connect_addr: String) -> String {
     // Replace all instances of localhost to the correct ip address
-    // This could be made better, using 0 and 1 and otherwise to correctly assign stuff
     gmap.replace("localhost", &connect_addr)
 }
 
+// Logging to file
+fn log(log_string: String) -> io::Result<()> {
+    let log_text = format!("{:?}: {}\n", Local::now(), log_string);
+    let mut file = File::options().append(true).write(true).create(true).open("log.txt")?;
+    println!("{}", log_text);
+    file.write_all(log_text.as_bytes())
+}
 
 fn client_handler(mut stream: TcpStream) -> io::Result<()> {
-    // Showing the client connection
-    println!("Client connected with info:\n{:?}", stream);
-    
+    // Getting client's IP for logging
+    let client_ip: String = stream.peer_addr()
+        .expect("Failed to get IP")
+        .to_string();
+
     // Reading from user initially
     let mut buf = [0;256];
     let _bytes_read = stream.read(&mut buf)?;
     let client_in = String::from_utf8_lossy(&buf).replace(&['\r', '\n', '\u{0}'][..], "");
-    println!("From user: {}", &client_in);
         
     // If the client sends nothing, send gophermap.
     if client_in.eq("") {
@@ -59,21 +67,23 @@ fn client_handler(mut stream: TcpStream) -> io::Result<()> {
                     stream.write_all(gophermap.as_bytes())?;
                 },
                 Err(e)=> {
-                    println!("File not found\n{:?}", e);
+                    log(format!("File not found\n{:?}", e))?;
                     let err_message = format!("The file {} does not exist.", filename);
                     stream.write_all(err_message.as_bytes())?;
                 }
             }
         }
     }
-    
-    // Exiting the function after packets are sent
-    println!("Finished sending, closing connection.");
-    Ok(())
+    log(format!("Client {} connected with input {}", client_ip, client_in))
 }
 
 fn main() {
-    println!("Starting Server...");
+    log("###################".to_string())
+        .expect("Failed to log");
+    log("  Starting Server  ".to_string())
+        .expect("Failed to log");
+    log("###################\n".to_string())
+        .expect("Failed to log");
 
     // Creating and binding port
     let receiver_listener = TcpListener::bind("192.168.1.154:70").expect("Failed to bind");
@@ -87,7 +97,6 @@ fn main() {
         let handle = thread::spawn(move || {client_handler(stream).unwrap()});
         thread_vec.push(handle);
     }
-
     for handle in thread_vec {
         // Killing threads after use
         handle.join().unwrap();
