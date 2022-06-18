@@ -1,2 +1,4 @@
 /target
 /resources/*
+Cargo.lock
+log.txt
